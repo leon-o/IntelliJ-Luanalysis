@@ -20,9 +20,7 @@ import com.intellij.codeInspection.LocalInspectionToolSession
 import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.psi.PsiElementVisitor
 import com.tang.intellij.lua.project.LuaSettings
-import com.tang.intellij.lua.psi.LuaIndexExpr
-import com.tang.intellij.lua.psi.LuaVisitor
-import com.tang.intellij.lua.psi.prefixExpression
+import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.search.PsiSearchContext
 import com.tang.intellij.lua.ty.*
 
@@ -31,8 +29,22 @@ class UndeclaredMemberInspection : StrictInspection() {
             object : LuaVisitor() {
                 override fun visitIndexExpr(o: LuaIndexExpr) {
                     val context = PsiSearchContext(o)
+                    val parentExpr = o.parent
                     val prefix = o.prefixExpression.guessType(context) ?: Primitives.UNKNOWN
                     val memberName = o.name
+
+                    if (parentExpr is LuaIfStat){
+                        super.visitIndexExpr(o)
+                        return;
+                    }
+
+                    if (parentExpr is LuaBinaryExpr){
+                        val binExpr = parentExpr as LuaBinaryExpr;
+                        if (binExpr.operationType==LuaTypes.EQ || binExpr.operationType==LuaTypes.NE) {
+                            super.visitIndexExpr(o)
+                            return;
+                        }
+                    }
 
                     Ty.eachResolved(context, prefix) { prefixTy ->
                         if (!prefixTy.isGlobal && !(prefixTy.isUnknown && LuaSettings.instance.isUnknownIndexable)) {

@@ -342,7 +342,7 @@ abstract class TyClass(override val className: String,
             if (classDef != null) {
                 val tyClass = classDef.type
                 aliasName = tyClass.aliasName
-                superClass = tyClass.superClass
+                superClass = if(tyClass.superClass == this) null else tyClass.superClass //If super class equal to self, set to null
                 params = tyClass.params
                 flags = tyClass.flags
                 signatures = tyClass.signatures
